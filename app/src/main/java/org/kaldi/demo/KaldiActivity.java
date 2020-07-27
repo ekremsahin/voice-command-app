@@ -56,9 +56,6 @@ public class KaldiActivity extends Activity implements
         System.loadLibrary("kaldi_jni");
     }
 
-    /*int braket = 123;
-    char bra = (char)braket;
-    */
 
     static private final int STATE_START = 0;
     static private final int STATE_READY = 1;

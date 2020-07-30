@@ -18,13 +18,18 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import android.os.Environment;
+import android.os.Looper;
+import android.provider.AlarmClock;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.text.method.ScrollingMovementMethod;
@@ -35,6 +40,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.kaldi.Assets;
 import org.kaldi.KaldiRecognizer;
 import org.kaldi.Model;
@@ -48,6 +56,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class KaldiActivity extends Activity implements
         RecognitionListener {
@@ -56,15 +66,17 @@ public class KaldiActivity extends Activity implements
         System.loadLibrary("kaldi_jni");
     }
 
+    String[] words;
 
     static private final int STATE_START = 0;
     static private final int STATE_READY = 1;
     static private final int STATE_DONE = 2;
     static private final int STATE_FILE = 3;
-    static private final int STATE_MIC  = 4;
+    static private final int STATE_MIC = 4;
 
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
+    private static final int PERMISSIONS_REQUEST_CALL_PHONE = 2;
 
 
     private Model model;
@@ -97,12 +109,14 @@ public class KaldiActivity extends Activity implements
 
 
 
-
-
-        // Check if user has given permission to record audio
         int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_RECORD_AUDIO);
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_CONTACTS,
+                    Manifest.permission.WRITE_CONTACTS}, PERMISSIONS_REQUEST_RECORD_AUDIO);
             return;
         }
         // Recognizer initialization is a time-consuming and it involves IO,
@@ -217,36 +231,77 @@ public class KaldiActivity extends Activity implements
 
     @Override
     public void onResult(String hypothesis) {
-        resultView.append(hypothesis + "\n");
+        /*resultView.append(hypothesis + "\n");
+
+         */
+        try {
+            JSONObject object = new JSONObject(hypothesis);
+            resultView.append(object.getString("partial"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
     }
 
     @Override
     public void onPartialResult(String hypothesis) {
-        resultView.append(hypothesis + "\n");
 
-        if(hypothesis.contains("galeri")){
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-            int requestcode1ForResult = 123;
-            startActivityForResult(intent,requestcode1ForResult);
+        try {
+            JSONObject object = new JSONObject(hypothesis);
+            String jsonHypo = object.getString("partial");
+            resultView.append(jsonHypo + "\n");
 
-        }
+            if (jsonHypo.contains("galeri")) {
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+                int requestcode1ForResult = 123;
+                startActivityForResult(intent, requestcode1ForResult);
+            }
 
-        if(hypothesis.contains("kamera")){
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            int requestcode2ForResult = 234;
-            startActivityForResult(intent,requestcode2ForResult);
-        }
+            if (jsonHypo.contains("kamera")) {
+                final int REQUEST_TAKE_PHOTO = 1;
 
-        if(hypothesis.contains("arama")){
-            Intent intent = new Intent(Intent.ACTION_DIAL);
-            startActivity(intent);
-        }
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                // Ensure that there's a camera activity to handle the intent
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    // Create the File where the photo should go
+                    File photoFile = null;
+                    try {
+                        photoFile = createImageFile();
+                    } catch (IOException ex) {
+                        // Error occurred while creating the File
+                    }
+                    // Continue only if the File was successfully created
+                    if (photoFile != null) {
+                        Uri photoURI = FileProvider.getUriForFile(this,
+                                "com.example.android.fileprovider",
+                                photoFile);
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                        startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                        galleryAddPic();
+                    }
+                }
+            }
 
-        if(hypothesis.contains("rehber")){
-            Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
-            int requestcode3ForResult = 345;
-            startActivityForResult(intent,requestcode3ForResult);
+            if (jsonHypo.contains("arama")) {
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                startActivity(intent);
+            }
+
+            if (jsonHypo.contains("rehber")) {
+                Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+                int requestcode3ForResult = 345;
+                startActivityForResult(intent, requestcode3ForResult);
+            }
+            if (jsonHypo.contains("kayıt")) {
+                if (jsonHypo.contains("isim")) {
+                    Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+                    int requestcode3ForResult = 345;
+                    startActivityForResult(intent, requestcode3ForResult);
+                }
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
 
@@ -326,11 +381,54 @@ public class KaldiActivity extends Activity implements
         }
     }
 
+    //--------------------------------------------------------------------------------------------------------
+    String currentPhotoPath;
 
-    public void dosyaAc(View view){
-        Intent intent = new Intent(Intent.ACTION_DIAL);
-        int requestcode4ForResult = 345;
-        startActivity(intent);
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,
+                ".jpg",
+                storageDir
+        );
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
     }
 
-}
+    private void galleryAddPic() {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f = new File(currentPhotoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        this.sendBroadcast(mediaScanIntent);
+    }
+
+    //-------------------------------------------------------------------------------------------------------
+    public void dosyaAc(View view) {
+
+        int permissionCheckcall = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CALL_PHONE);
+        if(permissionCheckcall != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.CALL_PHONE}, PERMISSIONS_REQUEST_CALL_PHONE);
+        }
+        String telNo = "533-111-448-8";
+        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        callIntent.setData(Uri.parse("tel:" + telNo.trim()));
+        startActivity(callIntent);
+
+        }
+    }
+
+    /* --------------------------- ALARM KURMA KODLARI --------------------------------
+        int hour = 8;
+        int minute = 9;
+
+        Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
+        intent.putExtra(AlarmClock.EXTRA_HOUR,hour);
+        intent.putExtra(AlarmClock.EXTRA_MINUTES,minute);
+
+        startActivity(intent);
+     */
+

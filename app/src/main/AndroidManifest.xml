@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.WRITE_CONTACTS"></uses-permission>
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM"></uses-permission>
     <uses-permission android:name="android.permission.CALL_PHONE"></uses-permission>
+    <uses-permission android:name="android.permission.SEND_SMS"></uses-permission>
     <uses-feature android:name="android.hardware.camera2" android:required="true"></uses-feature>
 
     <application
@@ -33,6 +34,12 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.actions.CREATE_NOTE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
         </activity>
     </application>
 </manifest>

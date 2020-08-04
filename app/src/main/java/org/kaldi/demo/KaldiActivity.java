@@ -16,6 +16,8 @@ package org.kaldi.demo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -32,6 +34,8 @@ import android.os.Looper;
 import android.provider.AlarmClock;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.security.ConfirmationCallback;
+import android.telephony.SmsManager;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Display;
@@ -39,6 +43,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.actions.NoteIntents;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -77,6 +83,7 @@ public class KaldiActivity extends Activity implements
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
     private static final int PERMISSIONS_REQUEST_CALL_PHONE = 2;
+    private static final int PERMISSIONS_REQUEST_SEND_SMS = 3;
 
 
     private Model model;
@@ -107,7 +114,15 @@ public class KaldiActivity extends Activity implements
             }
         });
 
+        int permissionCheckSMS = ContextCompat.checkSelfPermission(getApplicationContext(),Manifest.permission.SEND_SMS);
+        if(permissionCheckSMS != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.SEND_SMS},PERMISSIONS_REQUEST_SEND_SMS);
+        }
 
+        int permissionCheckcall = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CALL_PHONE);
+        if(permissionCheckcall != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CALL_PHONE}, PERMISSIONS_REQUEST_CALL_PHONE);
+        }
 
         int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
@@ -408,27 +423,78 @@ public class KaldiActivity extends Activity implements
     //-------------------------------------------------------------------------------------------------------
     public void dosyaAc(View view) {
 
-        int permissionCheckcall = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CALL_PHONE);
-        if(permissionCheckcall != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.CALL_PHONE}, PERMISSIONS_REQUEST_CALL_PHONE);
-        }
-        String telNo = "533-111-448-8";
-        Intent callIntent = new Intent(Intent.ACTION_CALL);
-        callIntent.setData(Uri.parse("tel:" + telNo.trim()));
-        startActivity(callIntent);
 
-        }
+
     }
+}
 
     /* --------------------------- ALARM KURMA KODLARI --------------------------------
-        int hour = 8;
-        int minute = 9;
+
+       -------------- İzinler manifest ve ana kod içerisinde tanımlandı ---------------
+
+        int hour = 8; // Kullanıcıdan alınacak
+        int minute = 9; // Kullanıcıdan alınacak
 
         Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
         intent.putExtra(AlarmClock.EXTRA_HOUR,hour);
         intent.putExtra(AlarmClock.EXTRA_MINUTES,minute);
 
         startActivity(intent);
+     */
+
+    /* -------------- UYGULAMA İÇERİSİNDEN DOĞRUDAN ARAMA YAPMA KODLARI ---------------
+
+       -------------- İzinler manifest ve ana kod içerisinde tanımlandı ---------------
+
+        String telNo = "533-111-448-8"; // Kullanıcıdan alınacak
+
+        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        callIntent.setData(Uri.parse("tel:" + telNo.trim()));
+        startActivity(callIntent);
+     */
+
+    /* ---------------- UYGULAMA İÇERİSİNDEN DOĞRUDAN SMS ATMA KODLARI ----------------
+
+        -------------- İzinler manifest ve ana kod içerisinde tanımlandı --------------
+
+        String telNo = "533-111-448-8"; // Kullanıcıdan alınacak
+        String mesaj = "Merhaba"; //Kullanıcıdan alınacak
+
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(telNo,null,mesaj,null,null);
+        Toast.makeText(getApplicationContext(),"SMS gönderildi",Toast.LENGTH_LONG).show();
+
+        NOT: Intent kullanarakta kullanıcıdan alınan bilgiler ile sms uygulamasına gidilebilir.
+             Ancak burada kullanıcının "gönder" tuşuna basması gerekmektedir.
+
+     */
+
+    /* -------------- NOT DETERİNE NOT KAYDETME KODLARI (SORUN VAR!) ------------------
+
+        final String subject = "subjectt";
+        final String text = "textt";
+
+        new AlertDialog.Builder(KaldiActivity.this)
+                .setIcon(android.R.drawable.sym_def_app_icon)
+                .setTitle("Emin misin?")
+                .setMessage("Bu notu kayıt edecek misiniz ?")
+                .setPositiveButton("yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = new Intent(NoteIntents.ACTION_CREATE_NOTE);
+                        intent.setType("text/plain");
+                        intent.putExtra(NoteIntents.EXTRA_NAME,subject);
+                        intent.putExtra(NoteIntents.EXTRA_TEXT,text);
+
+                        if(intent.resolveActivity(getPackageManager()) != null){
+                            startActivity(intent);
+                        }
+                        else{
+                            Toast.makeText(getApplicationContext(),"Handle edecek uygulama yok",Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }).setNegativeButton("No",null)
+                  .show();
+
      */
 

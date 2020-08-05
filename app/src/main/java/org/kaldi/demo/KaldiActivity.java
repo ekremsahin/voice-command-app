@@ -17,6 +17,7 @@ package org.kaldi.demo;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.SearchManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -423,8 +424,6 @@ public class KaldiActivity extends Activity implements
     //-------------------------------------------------------------------------------------------------------
     public void dosyaAc(View view) {
 
-
-
     }
 }
 
@@ -453,7 +452,7 @@ public class KaldiActivity extends Activity implements
         startActivity(callIntent);
      */
 
-    /* ---------------- UYGULAMA İÇERİSİNDEN DOĞRUDAN SMS ATMA KODLARI ----------------
+    /* ---------------- UYGULAMA İÇERİSİNDEN DOĞRUDAN SMS ATMA KODLARI -----------------
 
         -------------- İzinler manifest ve ana kod içerisinde tanımlandı --------------
 
@@ -495,6 +494,49 @@ public class KaldiActivity extends Activity implements
                     }
                 }).setNegativeButton("No",null)
                   .show();
+
+     */
+
+    /* ------------------------ GOOGLE KEEP NOT KAYIT İŞLEMİ --------------------------
+
+     try {
+            String isim = "Alışveriş Listesi";
+            String icerik = "Süt\nYumurta\nYağ\nŞeker";
+
+            Intent keepIntent = new Intent(Intent.ACTION_SEND);
+            keepIntent.setType("text/plain");
+            keepIntent.setPackage("com.google.android.keep");
+
+            keepIntent.putExtra(Intent.EXTRA_SUBJECT, isim);
+            keepIntent.putExtra(Intent.EXTRA_TEXT, icerik);
+
+            startActivity(keepIntent);
+        } catch (Exception e) {
+            Toast.makeText(this,"Google Keep telefonda yüklü değil",Toast.LENGTH_LONG).show();
+        }
+     */
+
+    /* ----------------------------- TIMER KURMA İŞLEMİ --------------------------------
+
+        -------------- İzinler manifest ve ana kod içerisinde tanımlandı ---------------
+
+         Intent intent = new Intent(AlarmClock.ACTION_SET_TIMER)
+                .putExtra(AlarmClock.EXTRA_MESSAGE, "MESAJ")
+                .putExtra(AlarmClock.EXTRA_LENGTH, 360)
+                .putExtra(AlarmClock.EXTRA_SKIP_UI, true);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        }
+     */
+
+    /* ----------------------- İNTERNETTE KELİME BAZLI ARAMA YAPMA ----------------------
+
+        String arama = "Android"
+        Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
+        intent.putExtra(SearchManager.QUERY, arama);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+        startActivity(intent);
+    }
 
      */
 

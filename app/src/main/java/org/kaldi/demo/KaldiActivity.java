@@ -21,6 +21,7 @@ import android.app.SearchManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -271,28 +272,30 @@ public class KaldiActivity extends Activity implements
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
                 int requestcode1ForResult = 123;
                 startActivityForResult(intent, requestcode1ForResult);
+                MediaPlayer clickSes = MediaPlayer.create(this,R.raw.sound_ex_machina_button_tick);
+                clickSes.start();
             }
 
             if (jsonHypo.contains("kamera")) {
                 final int REQUEST_TAKE_PHOTO = 1;
 
                 Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                // Ensure that there's a camera activity to handle the intent
                 if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
                     // Create the File where the photo should go
                     File photoFile = null;
                     try {
                         photoFile = createImageFile();
                     } catch (IOException ex) {
-                        // Error occurred while creating the File
+                        ex.printStackTrace();
                     }
-                    // Continue only if the File was successfully created
                     if (photoFile != null) {
                         Uri photoURI = FileProvider.getUriForFile(this,
                                 "com.example.android.fileprovider",
                                 photoFile);
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                         startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                        MediaPlayer clickSes = MediaPlayer.create(this,R.raw.sound_ex_machina_button_tick);
+                        clickSes.start();
                         galleryAddPic();
                     }
                 }
@@ -301,18 +304,24 @@ public class KaldiActivity extends Activity implements
             if (jsonHypo.contains("arama")) {
                 Intent intent = new Intent(Intent.ACTION_DIAL);
                 startActivity(intent);
+                MediaPlayer clickSes = MediaPlayer.create(this,R.raw.sound_ex_machina_button_tick);
+                clickSes.start();
             }
 
             if (jsonHypo.contains("rehber")) {
                 Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
                 int requestcode3ForResult = 345;
                 startActivityForResult(intent, requestcode3ForResult);
+                MediaPlayer clickSes = MediaPlayer.create(this,R.raw.sound_ex_machina_button_tick);
+                clickSes.start();
             }
             if (jsonHypo.contains("kayıt")) {
                 if (jsonHypo.contains("isim")) {
                     Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
                     int requestcode3ForResult = 345;
                     startActivityForResult(intent, requestcode3ForResult);
+                    MediaPlayer clickSes = MediaPlayer.create(this,R.raw.sound_ex_machina_button_tick);
+                    clickSes.start();
                 }
             }
 
@@ -423,6 +432,10 @@ public class KaldiActivity extends Activity implements
 
     //-------------------------------------------------------------------------------------------------------
     public void dosyaAc(View view) {
+
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        int requestcode1ForResult = 123;
+        startActivityForResult(intent, requestcode1ForResult);
 
     }
 }
@@ -538,5 +551,51 @@ public class KaldiActivity extends Activity implements
         startActivity(intent);
     }
 
+     */
+
+    /* -------------------------- GALERİYE VİDEO KAYDETME -------------------------------
+
+       -------------- İzinler manifest ve ana kod içerisinde tanımlandı -----------------
+
+        Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        if (takeVideoIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takeVideoIntent, 1);
+        }
+     */
+
+    /* ------------ YÜKLÜ UYGULAMA ADLARI VE PAKET ADLARIYLA UYGULAMAYI AÇMA ------------
+
+       -------------- İzinler manifest ve ana kod içerisinde tanımlandı -----------------
+
+       public void uygulamaAdlari(){
+        List<PackageInfo> packageList = getPackageManager().getInstalledPackages(0);
+        for(int i = 0; i<packageList.size(); i++){
+            PackageInfo packageInfo = packageList.get(i);
+            if((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0){
+                String appName = packageInfo.applicationInfo.loadLabel(getPackageManager()).toString().toLowerCase();
+                String pacName = packageInfo.packageName;
+                mMap.put(appName,pacName);
+            }
+        }
+        List appNameList = new ArrayList(mMap.keySet());
+        List pacNameList = new ArrayList(mMap.values());
+        int i = 3;
+        String anahtar = "keep notes";
+        if(appNameList.contains(anahtar)){
+            i = appNameList.indexOf(anahtar);
+
+            String packageName = (String) pacNameList.get(i);
+            Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } else {
+                // Yüklü değilse marketten uygulamayı getiriyor
+                intent = new Intent(Intent.ACTION_VIEW);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.setData(Uri.parse("market://details?id=" + "com.package.name"));
+                startActivity(intent);
+            }
+        }
      */
 

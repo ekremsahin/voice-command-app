@@ -4,6 +4,7 @@
     android:layout_height="fill_parent"
     android:orientation="vertical"
     android:padding="16dp">
+
     <Button
         android:id="@+id/recognize_file"
         android:layout_width="match_parent"
@@ -20,6 +21,14 @@
         android:layout_height="wrap_content"
         android:text="Dosya Ac"
         android:onClick="dosyaAc"/>
+
+    <TextView
+        android:id="@+id/verilerTextView"
+        android:layout_width="match_parent"
+        android:layout_height="175dp"
+        android:gravity="center"
+        android:hint="veriler"
+        android:textSize="18sp" />
 
     <TextView
         android:id="@+id/result_text"

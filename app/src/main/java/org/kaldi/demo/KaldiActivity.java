@@ -16,8 +16,6 @@ package org.kaldi.demo;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.SearchManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -27,28 +25,25 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import android.os.Environment;
-import android.os.Looper;
-import android.provider.AlarmClock;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
-import android.security.ConfirmationCallback;
-import android.telephony.SmsManager;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.actions.NoteIntents;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.kaldi.Assets;
@@ -59,13 +54,23 @@ import org.kaldi.SpeechRecognizer;
 import org.kaldi.Vosk;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+
+import org.kaldi.demo.jsonmodel.JsonModel;
+import org.kaldi.demo.service.LocalAPI;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 
 public class KaldiActivity extends Activity implements
         RecognitionListener {
@@ -87,6 +92,9 @@ public class KaldiActivity extends Activity implements
     private static final int PERMISSIONS_REQUEST_CALL_PHONE = 2;
     private static final int PERMISSIONS_REQUEST_SEND_SMS = 3;
 
+    Retrofit retrofit;
+    ArrayList<JsonModel> jsonModelArrayList;
+    TextView verilerTextView;
 
     private Model model;
     private SpeechRecognizer recognizer;
@@ -99,6 +107,7 @@ public class KaldiActivity extends Activity implements
         setContentView(R.layout.main);
 
         // Setup layout
+        verilerTextView = findViewById(R.id.verilerTextView);
         resultView = findViewById(R.id.result_text);
         setUiState(STATE_START);
 
@@ -308,6 +317,21 @@ public class KaldiActivity extends Activity implements
                 clickSes.start();
             }
 
+            if(jsonHypo.contains("isimler")){
+
+                String BASEURL = "http://10.0.2.2:8080/api/";
+
+                Gson gson = new GsonBuilder().setLenient().create();
+
+                retrofit = new Retrofit.Builder()
+                        .baseUrl(BASEURL)
+                        .addConverterFactory(GsonConverterFactory.create(gson))
+                        .build();
+
+                loadData();
+
+            }
+
             if (jsonHypo.contains("rehber")) {
                 Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
                 int requestcode3ForResult = 345;
@@ -432,10 +456,50 @@ public class KaldiActivity extends Activity implements
 
     //-------------------------------------------------------------------------------------------------------
     public void dosyaAc(View view) {
+        try {
+            String isim = "Alışveriş Listesi";
+            String icerik = "Süt\nYumurta\nYağ\nŞeker";
 
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-        int requestcode1ForResult = 123;
-        startActivityForResult(intent, requestcode1ForResult);
+            Intent keepIntent = new Intent(Intent.ACTION_SEND);
+            keepIntent.setType("text/plain");
+            keepIntent.setPackage("com.google.android.keep");
+
+            keepIntent.putExtra(Intent.EXTRA_SUBJECT, isim);
+            keepIntent.putExtra(Intent.EXTRA_TEXT, icerik);
+
+            startActivity(keepIntent);
+        } catch (Exception e) {
+            Toast.makeText(this,"Google Keep telefonda yüklü değil",Toast.LENGTH_LONG).show();
+        }
+
+
+    }
+
+    public void loadData(){
+
+        LocalAPI localAPI = retrofit.create(LocalAPI.class);
+        Call<List<JsonModel>> call = localAPI.getdata();
+
+        call.enqueue(new Callback<List<JsonModel>>() {
+            @Override
+            public void onResponse(Call<List<JsonModel>> call, Response<List<JsonModel>> response) {
+
+                if(response.isSuccessful()){
+                    List<JsonModel> jsonModelList = response.body();
+                    jsonModelArrayList = new ArrayList<>(jsonModelList);
+
+                    for(JsonModel jsonModel : jsonModelArrayList){
+                        verilerTextView.append(jsonModel.id + "\n");
+                        verilerTextView.append(jsonModel.name + "\n");
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<JsonModel>> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
 
     }
 }
@@ -481,34 +545,6 @@ public class KaldiActivity extends Activity implements
 
      */
 
-    /* -------------- NOT DETERİNE NOT KAYDETME KODLARI (SORUN VAR!) ------------------
-
-        final String subject = "subjectt";
-        final String text = "textt";
-
-        new AlertDialog.Builder(KaldiActivity.this)
-                .setIcon(android.R.drawable.sym_def_app_icon)
-                .setTitle("Emin misin?")
-                .setMessage("Bu notu kayıt edecek misiniz ?")
-                .setPositiveButton("yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(NoteIntents.ACTION_CREATE_NOTE);
-                        intent.setType("text/plain");
-                        intent.putExtra(NoteIntents.EXTRA_NAME,subject);
-                        intent.putExtra(NoteIntents.EXTRA_TEXT,text);
-
-                        if(intent.resolveActivity(getPackageManager()) != null){
-                            startActivity(intent);
-                        }
-                        else{
-                            Toast.makeText(getApplicationContext(),"Handle edecek uygulama yok",Toast.LENGTH_LONG).show();
-                        }
-                    }
-                }).setNegativeButton("No",null)
-                  .show();
-
-     */
 
     /* ------------------------ GOOGLE KEEP NOT KAYIT İŞLEMİ --------------------------
 
@@ -597,5 +633,34 @@ public class KaldiActivity extends Activity implements
                 startActivity(intent);
             }
         }
+     */
+
+    /* -------------- NOT DETERİNE NOT KAYDETME KODLARI (SORUN VAR!) ------------------
+
+        final String subject = "subjectt";
+        final String text = "textt";
+
+        new AlertDialog.Builder(KaldiActivity.this)
+                .setIcon(android.R.drawable.sym_def_app_icon)
+                .setTitle("Emin misin?")
+                .setMessage("Bu notu kayıt edecek misiniz ?")
+                .setPositiveButton("yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = new Intent(NoteIntents.ACTION_CREATE_NOTE);
+                        intent.setType("text/plain");
+                        intent.putExtra(NoteIntents.EXTRA_NAME,subject);
+                        intent.putExtra(NoteIntents.EXTRA_TEXT,text);
+
+                        if(intent.resolveActivity(getPackageManager()) != null){
+                            startActivity(intent);
+                        }
+                        else{
+                            Toast.makeText(getApplicationContext(),"Handle edecek uygulama yok",Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }).setNegativeButton("No",null)
+                  .show();
+
      */
 

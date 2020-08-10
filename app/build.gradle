@@ -13,12 +13,24 @@ android {
         versionCode 1
         versionName "1.1"
     }
+
+    compileOptions {
+        targetCompatibility = "8"
+        sourceCompatibility = "8"
+    }
+
 }
+
+
 
 dependencies {
     implementation project(':aars')
     implementation project(':models')
-    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'com.google.android.gms:play-services-plus:17.0.0'
     implementation 'com.google.android.gms:play-services-base:17.3.0'
+
+    implementation "com.squareup.retrofit2:retrofit:2.8.0"
+    implementation "com.squareup.retrofit2:converter-gson:2.8.0"
+
 }

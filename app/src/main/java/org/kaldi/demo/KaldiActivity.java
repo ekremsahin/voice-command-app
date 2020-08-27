@@ -458,7 +458,7 @@ public class KaldiActivity extends Activity implements
     public void dosyaAc(View view) {
         try {
             String isim = "Alışveriş Listesi";
-            String icerik = "Süt\nYumurta\nYağ\nŞeker";
+            String icerik = "Süt\nYumurta\nYağ\nŞeker\nSucuk\nSosis";
 
             Intent keepIntent = new Intent(Intent.ACTION_SEND);
             keepIntent.setType("text/plain");
